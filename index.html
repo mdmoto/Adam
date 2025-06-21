@@ -1,0 +1,334 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电商首页 - 淘宝风格</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            background-color: #f5f5f5;
+        }
+        /* 导航栏 */
+        .navbar {
+            background-color: #ff5000;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+        .navbar .logo {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .navbar .search-bar {
+            flex: 0.4;
+            display: flex;
+        }
+        .navbar input {
+            padding: 8px;
+            border: none;
+            width: 100%;
+            border-radius: 4px 0 0 4px;
+        }
+        .navbar button {
+            padding: 8px 15px;
+            background-color: #fff;
+            color: #ff5000;
+            border: none;
+            border-radius: 0 4px 4px 0;
+            cursor: pointer;
+        }
+        .navbar .menu a {
+            color: white;
+            margin-left: 15px;
+            text-decoration: none;
+        }
+        /* 轮播图 */
+        .banner {
+            margin-top: 60px;
+            position: relative;
+            width: 100%;
+            height: 400px;
+            overflow: hidden;
+        }
+        .banner img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+            position: absolute;
+        }
+        .banner img.active {
+            display: block;
+        }
+        .banner .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .banner .controls span {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background-color: #fff;
+            border-radius: 50%;
+            margin: 0 5px;
+            cursor: pointer;
+        }
+        .banner .controls span.active {
+            background-color: #ff5000;
+        }
+        /* 分类导航 */
+        .categories {
+            background-color: white;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 1200px;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+        }
+        .category-item {
+            text-align: center;
+            margin: 10px;
+        }
+        .category-item img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+        }
+        .category-item p {
+            margin-top: 5px;
+            color: #333;
+        }
+        /* 产品展示 */
+        .products {
+            max-width: 1200px;
+            margin: 20px auto;
+            background-color: white;
+            padding: 20px;
+        }
+        .products h2 {
+            color: #ff5000;
+            margin-bottom: 20px;
+        }
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        .product-item {
+            border: 1px solid #eee;
+            padding: 10px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+        .product-item:hover {
+            transform: scale(1.05);
+        }
+        .product-item img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        .product-item p {
+            margin: 10px 0;
+            color: #333;
+        }
+        .product-item .price {
+            color: #ff5000;
+            font-weight: bold;
+        }
+        /* 底部 */
+        .footer {
+            background-color: #333;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .footer a {
+            color: #ff5000;
+            margin: 0 10px;
+            text-decoration: none;
+        }
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                padding: 10px;
+            }
+            .navbar .search-bar {
+                width: 100%;
+                margin: 10px 0;
+            }
+            .banner {
+                height: 200px;
+            }
+            .product-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <div class="navbar">
+        <div class="logo">电商商城</div>
+        <div class="search-bar">
+            <input type="text" placeholder="搜索商品...">
+            <button>搜索</button>
+        </div>
+        <div class="menu">
+            <a href="#">首页</a>
+            <a href="#">分类</a>
+            <a href="#">购物车</a>
+            <a href="#">我的</a>
+        </div>
+    </div>
+
+    <!-- 轮播图 -->
+    <div class="banner">
+        <img src="https://via.placeholder.com/1200x400?text=促销Banner1" class="active">
+        <img src="https://via.placeholder.com/1200x400?text=促销Banner2">
+        <img src="https://via.placeholder.com/1200x400?text=促销Banner3">
+        <div class="controls">
+            <span class="active"></span>
+            <span></span>
+            <span></span>
+        </div>
+    </div>
+
+    <!-- 分类导航 -->
+    <div class="categories">
+        <div class="category-item">
+            <img src="https://via.placeholder.com/80?text=服装">
+            <p>服装</p>
+        </div>
+        <div class="category-item">
+            <img src="https://via.placeholder.com/80?text=数码">
+            <p>数码</p>
+        </div>
+        <div class="category-item">
+            <img src="https://via.placeholder.com/80?text=美妆">
+            <p>美妆</p>
+        </div>
+        <div class="category-item">
+            <img src="https://via.placeholder.com/80?text=食品">
+            <p>食品</p>
+        </div>
+    </div>
+
+    <!-- 产品展示 -->
+    <div class="products">
+        <h2>热销推荐</h2>
+        <div class="product-grid">
+            <div class="product-item">
+                <img src="https://via.placeholder.com/200?text=产品1">
+                <p>时尚T恤</p>
+                <p class="price">¥59.9</p>
+            </div>
+            <div class="product-item">
+                <img src="https://via.placeholder.com/200?text=产品2">
+                <p>无线耳机</p>
+                <p class="price">¥199</p>
+            </div>
+            <div class="product-item">
+                <img src="https://via.placeholder.com/200?text=产品3">
+                <p>护肤套装</p>
+                <p class="price">¥299</p>
+            </div>
+            <div class="product-item">
+                <img src="https://via.placeholder.com/200?text=产品4">
+                <p>零食礼包</p>
+                <p class="price">¥89.9</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部 -->
+    <div class="footer">
+        <p><a href="#">关于我们</a> | <a href="#">联系客服</a> | <a href="#">隐私政策</a></p>
+        <p>© 2025 电商商城. All Rights Reserved.</p>
+    </div>
+
+    <!-- 轮播图脚本 -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            let currentIndex = 0;
+            const $slides = $('.banner img');
+            const $dots = $('.banner .controls span');
+            const slideCount = $slides.length;
+
+            function showSlide(index) {
+                $slides.removeClass('active').eq(index).addClass('active');
+                $dots.removeClass('active').eq(index).addClass('active');
+            }
+
+            function nextSlide() {
+                currentIndex = (currentIndex + 1) % slideCount;
+                showSlide(currentIndex);
+            }
+
+            $dots.click(function() {
+                currentIndex = $(this).index();
+                showSlide(currentIndex);
+            });
+
+            setInterval(nextSlide, 5000); // 每5秒切换
+        });
+    </script>
+</body>
+</html>
