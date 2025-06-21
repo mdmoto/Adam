@@ -108,8 +108,9 @@
             object-fit: contain;
             display: none;
             position: absolute;
-            top: 0;
-            left: 0;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); /* 居中对齐 */
         }
         .banner img.active {
             display: block;
@@ -218,18 +219,19 @@
             }
             .banner {
                     aspect-ratio: 3 / 1;
-                    max-height: 250px;
+                    max-height: 300px;
             }
             .product-grid {
                 grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             }
         }
         @media (max-width: 480px) {
-    .banner {
-        max-height: 200px;
-    }
-    .banner img {
-        object-fit: contain;
+            .banner {
+                max-height: 200px;
+                aspect-ratio: 3 / 1;
+            }
+            .banner img {
+                object-fit: contain;
     }
 }
     </style>
